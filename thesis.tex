@@ -1,13 +1,13 @@
 \documentclass[11pt,
-  paper=a4, 
+  paper=a4,
   bibliography=totocnumbered,
 	captions=tableheading,
 	BCOR=10mm
 ]{scrreprt}
 
 \usepackage[utf8]{inputenc}
- 
- 
+
+
 \usepackage[onehalfspacing]{setspace}
 \usepackage{csquotes} % Context sensitive quotation.
 \usepackage{amsmath} % Standard math.
@@ -15,7 +15,7 @@
 \usepackage{amssymb} % More math symbols.
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}[chapter]
- 
+
 \usepackage[section]{placeins} % Keep floats in the section they were defined in.
 \usepackage{tabularx}
 \usepackage{booktabs} % Scientific table styling.
@@ -34,16 +34,16 @@
 \usepackage{authoraftertitle} % Make author, etc., available after \maketitle
 \usepackage{listofitems}
 \usepackage{blindtext} % Placeholder text.
-\usepackage[automake, nopostdot, nonumberlist]{glossaries} % glossary for definitions and acronyms, without dot after entry and page reference 
+\usepackage[automake, nopostdot, nonumberlist]{glossaries} % glossary for definitions and acronyms, without dot after entry and page reference
 \makeglossaries % Generate the glossary
 
 % \PassOptionsToPackage{obeyspaces}{url}%
-\usepackage[backend=bibtex,% 
-style=nature,% 
+\usepackage[backend=bibtex,%
+style=nature,%
 doi=true,isbn=false,url=false, eprint=false]{biblatex}
 % \renewbibmacro*{url}{\printfield{urlraw}}
 
-\addbibresource{references.bib}
+\addbibresource{free_energy.bib}
 
 \DeclareStyleSourcemap{
   \maps[datatype=bibtex, overwrite=true]{
@@ -60,7 +60,7 @@ doi=true,isbn=false,url=false, eprint=false]{biblatex}
 }
 
 %\linespread{1.5} % set line spacing
- 
+
 \usepackage{listings} % rendering program code
 \lstset{% general command to set parameter(s)
 	basicstyle=\ttfamily\color{grey},          % print whole listing small
@@ -82,7 +82,7 @@ doi=true,isbn=false,url=false, eprint=false]{biblatex}
 \DeclareFontSubstitution{U}{mathx}{m}{n}
 \DeclareMathSymbol{\bigtimes}{1}{mathx}{"91}
 
- 
+
 
 %%% Custom definitions %%%
 % Shorthands
@@ -119,7 +119,7 @@ doi=true,isbn=false,url=false, eprint=false]{biblatex}
 	\vspace{5cm}
 	{\setlength{\parindent}{0cm}
 	\begin{minipage}{0.3\textwidth}
-		\hrule 
+		\hrule
 		\vspace{0.5cm}
 		{\small city, date}
 	\end{minipage}
@@ -134,7 +134,7 @@ doi=true,isbn=false,url=false, eprint=false]{biblatex}
 % Automatically use the first sentence in a caption as the short caption.
 \newcommand\slcaption[1]{\setsepchar{.}\readlist*\pdots{#1}\caption[{\pdots[1].}]{#1}}
 
-% Variables. 
+% Variables.
 % Adapt if necessary, use to refer to figures and graphics.
 \def \figwidth {0.9\linewidth}
 \graphicspath{ {./graphics/figures/}{./graphics/figures/} } % Path to figures and images.
@@ -148,8 +148,8 @@ doi=true,isbn=false,url=false, eprint=false]{biblatex}
 
 
 % TODO Fill with your data.
-\title{My full title}
-\author{Firstname Lastname}
+\title{Towards a minimalistic free energy agent}
+\author{Esther Chevalier}
 
 \begin{document}
 
@@ -162,21 +162,21 @@ doi=true,isbn=false,url=false, eprint=false]{biblatex}
 
 	\vspace{2cm}
 	\centering{
-		Bachelor/Masterthesis\vspace{1cm}\\
+		Bachelorthesis\vspace{1cm}\\
 		\textbf{\Large{\MyTitle}}
 		\vspace{1cm}\\
 		\begin{tabular}{c}
 			\MyAuthor                          \\
-			968684                             \\
-			Bachelor's/Master's Program Cognitive Science \\
-			Starting month and year - end month and year
+			972437                             \\
+			Bachelor's Program Cognitive Science \\
+			10/2020 - 01/2021
 		\end{tabular}}
 	\vspace{1cm}
 
 	\begin{tabular}{ll}
-		First supervisor:  & Rüdiger Busche, M.Sc.          \\
-		                   & inserve GmbH                   \\
-		                   & Hannover                       \\\\
+		First supervisor:  & Georg Schröter, M.Sc.          \\
+		                   & Institute of Cognitive Science                  \\
+		                   & Osnabrück                       \\\\
 		Second supervisor: & Prof. Dr. Someone Else         \\
 		                   & Institute of Cognitive Science \\
 		                   & Osnabrück
@@ -234,8 +234,8 @@ I hereby certify that the work presented here is, to the best of my knowledge an
 
 This references a \figref{fig:scientific_graph_quality} while this references a table \tabref{tab:scientific_graph_quality}.
 
-A citation looks like this \cite{hadash2018estimate}. To embed a citation in the text flow use textcite,
-\eg \textcite{hadash2018estimate} said you should use a lot of citations.
+A citation looks like this \cite{Colombo2017}. To embed a citation in the text flow use textcite,
+\eg \textcite{Friston2012} said you should use a lot of citations.
 
 \chapter{Methods}
 
@@ -252,7 +252,7 @@ A citation looks like this \cite{hadash2018estimate}. To embed a citation in the
 
 
 % Acronym definitions
-%TODO Add acronym definitions produced by acronyms2glossary.py 
+%TODO Add acronym definitions produced by acronyms2glossary.py
 
 
 
