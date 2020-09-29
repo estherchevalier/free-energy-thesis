@@ -3,6 +3,12 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import itertools
 
+###
+##TO DO
+## Try adding q states information to exp_free_energy
+
+np.seterr(invalid='ignore', divide='ignore')
+
 ## Based on https://medium.com/@solopchuk/tutorial-on-active-inference-30edcf50f5dc
 ## Tutorial on Active Inference
 
@@ -19,10 +25,11 @@ def KL(a, b):
 
     return np.sum(np.where(a != 0, a * np.log(a / b), 0))
 
+
 def H(p):
     # Ambiguity
     p = np.array(p)
-    H = -sum(p * np.log(p))
+    H = -np.sum(np.where(p != 0, p * np.log(p), 0))
 
     return H
 
@@ -51,7 +58,7 @@ unique_states = [0, 1]
 # Prior preferences on observations
 # p(o)
 
-p_obs = [0.99, 0.01]
+p_obs = [1, 0]
 
 
 # Prior belief on hidden states
@@ -66,7 +73,7 @@ p_states = [0.5, 0.5]
 # X-axis: observation
 
 A = np.array([[0.9, 0.1], [0.3, 0.7]])
-#A = np.array([[0.9999, 0.0001], [0.0001, 0.9999]])
+A = np.array([[1, 0], [0, 1]])
 
 # Transition probability p(state_t | state_t-1, action)
 # B[x, y, z]
@@ -74,13 +81,13 @@ A = np.array([[0.9, 0.1], [0.3, 0.7]])
 # Y-axis: action
 # Z-axis: Next state (at t+1)
 
-B = np.array([[[0.8, 0.2], [0.01, 0.99]],[[0.6, 0.4], [0.15, 0.85]]])
-#B = np.array([[[0.9999, 0.0001], [0.0001, 0.9999]],[[0.9999, 0.0001], [0.0001, 0.9999]]])
+B = np.array([[[0.8, 0.2], [0.3, 0.7]],[[0.6, 0.4], [0.15, 0.85]]])
+B = np.array([[[1, 0], [0, 1]],[[1, 0], [0, 1]]])
 
 ######### Prediction ################################
 
 
-def expected_free_energy(expected_state, action, p_obs=p_obs):
+def expected_free_energy(q_state, action, p_obs=p_obs):
 
     """
     Using the current expected state, calculate the expected free energy if we
@@ -90,10 +97,10 @@ def expected_free_energy(expected_state, action, p_obs=p_obs):
     observation
 
     expected_state: (2d-array)  The state the agent expects to be in at a
-                                particular time step t. Formally: q(s_t | policy)
+                                particular time step t-1. Formally: q(s_t | policy)
     p_obs:          (2d-array)  The observation the agent prefers.
                                 Formally: p(observation)
-    action: (int)               Action taken at time step t.
+    action: (int)               Action taken at time step t-1.
 
     ### Questions ###
     How does this prediction work?
@@ -103,14 +110,24 @@ def expected_free_energy(expected_state, action, p_obs=p_obs):
     # Complexity term
     # Kullback-Leibler-Divergence between expected observation if action a is
     # taken and the agent's preferences in observations
-    expected_obs = expected_state @ B[:, action] @ A
-    cost = KL(expected_obs, p_obs)
+    q_state = np.array(q_state)[-1]
+    #print("Q\n", q_state)
+    #exp_current_state = q_state[-1]
+    exp_next_state = B[:, action] @ q_state
+    expected_obs = A @ exp_next_state
+
+    cost =  KL(expected_obs, p_obs)
+
+    print(exp_next_state)
 
     # Ambiguity term
     ambiguity = 0
 
     for s in unique_states:
-        ambiguity += expected_state[0, s] * H(A[s])
+        ambiguity += exp_next_state[s] * H(A[s])
+        #ambiguity += q_state * H(A[s])
+
+    #print("cost", cost, "ambiguity", ambiguity, "expected_obs", expected_obs)
 
     exp_free_energy = cost + ambiguity
     print("Action", action, "\tExpected free energy:", exp_free_energy)
@@ -131,7 +148,7 @@ def exp_free_energy_per_policy(policies, start_state, p_obs=p_obs):
 
     q_state = []
     exp_free_energies = []
-    start_state = np.array(start_state).reshape(1, 2)
+    start_state = np.array(start_state)#.reshape(1, 2)
 
     for policy in policies:
 
@@ -148,10 +165,10 @@ def exp_free_energy_per_policy(policies, start_state, p_obs=p_obs):
         ## Compute free energy of each policy
         for time_step, action in enumerate(policy):
 
-            exp_free_energy = expected_free_energy(current_state, action, p_obs)
+            exp_free_energy = expected_free_energy(q_states_policy, action, p_obs)
             fe_policy += exp_free_energy
 
-            exp_state_after_action = (current_state @ B[:, action]).reshape(1, 2)
+            exp_state_after_action = (current_state @ B[:, action]).squeeze()
 
             q_states_policy.append(exp_state_after_action)
             current_state = exp_state_after_action
@@ -206,7 +223,7 @@ def bayesian_averaging(free_energies, q_state_per_policy):
 
 ## Act such as we observe what we expect
 
-def action_selection(q_state, time_step):
+def action_selection(q_state, current_state, time_step):
     """
 
     q_state: (2d-array)
@@ -227,7 +244,8 @@ def action_selection(q_state, time_step):
     exp_observation_after_action = list()
 
     for a in unique_actions:
-        exp_observation_after_action.append(q_state[time_step] @ B[:, a] @ A)
+        #print(current_state, current_state[time_step])
+        exp_observation_after_action.append(current_state @ B[:, a] @ A)
 
     exp_observation_after_action = np.array(exp_observation_after_action)
     #print("Expected obs after action\n", exp_observation_after_action)
@@ -239,18 +257,18 @@ def action_selection(q_state, time_step):
 
     for a in unique_actions:
 
-        fe_per_action = KL(expected_observation, exp_observation_after_action[a])
+        fe_per_action = KL(exp_observation_after_action[a], expected_observation)
         free_energy.append(fe_per_action)
 
     free_energy = np.array(free_energy)
-    print("FE", free_energy, end='\n\n')
+    print("FE", free_energy)
     chosen_action = np.argmin(free_energy)
-    print("Take action", chosen_action)
+    print("Take action", chosen_action, end='\n\n')
 
     return chosen_action
 
 
-def execute_action(current_obs, action):
+def execute_action(current_state, action):
     """
 
     current_obs: (1d-array) Current perception of the agent. Probability
@@ -260,44 +278,45 @@ def execute_action(current_obs, action):
     ## TO FIX(?) ##
     - Should include true hidden environmental model instead of generative model
     (matrices A, B)
+    - No need to compute observation
     """
 
     #
-    current_state = (current_obs * A).sum(axis=0)
-    print("Current state:", current_state)
+    # current_state = (current_obs * A).sum(axis=0)
+    # print("Current state:", current_state)
 
-    state_after_action = (current_state * B[:, action].T).sum(axis=0)
+    #state_after_action = (current_state * B[:, action].T).sum(axis=0)
+    state_after_action = current_state @ B[:, action]
     print("Next state:", state_after_action)
 
     obs_after_action = (state_after_action.T * A).sum(axis=1)
     obs_after_action = softmax(obs_after_action)
     print("Next obs:", obs_after_action)
 
-    return obs_after_action
+    return state_after_action, obs_after_action
 
 
-def act(q_state, start_obs):
+def act(q_state, start_state):
 
     """
     q_state: (2d-array)
     start_obs: (1d-array)
     """
 
-    current_obs = start_obs
+    #current_obs = start_obs
+    current_state = start_state
     actions_taken = []
 
     for time_step in range(q_state.shape[0]-1):
 
-        action = action_selection(q_state, time_step)
+        action = action_selection(q_state, current_state, time_step)
         actions_taken.append(action)
-        new_obs = execute_action(current_obs, action)
-
-        current_obs = new_obs
+        current_state, current_obs = execute_action(current_state, action)
 
     return actions_taken
 
 
-########### Predict and Act #########################################
+########### Predict and Act ##################
 
 def predict_and_act(p_obs, start_state, policies):
 
@@ -312,9 +331,9 @@ def predict_and_act(p_obs, start_state, policies):
     qs_final = bayesian_averaging(fe, qs)
 
     print("\n## Action ##")
-    print("\nActions taken:", act(qs_final, start_obs))
-    print("Policy with lowest FE:", policies[np.where(fe == fe.min())], "FE:", fe.min())
-    print("q(state|best policy)\n:", qs[np.where(fe == fe.min())])
+    print("\nActions taken:", act(qs_final, start_state))
+    print("Policy with lowest FE:\n", policies[np.where(fe == fe.min())], "\nFree energy:", fe.min())
+    print("q(state|best policy):\n", qs[np.where(fe == fe.min())])
     #print("All policies\n", policies)
     #print("All free energies", fe)
     #print("q(state|policy)\n", qs)
@@ -322,7 +341,7 @@ def predict_and_act(p_obs, start_state, policies):
 
 ################################################
 
-p_obs = [0.5, 0.5]
+
 
 qs = np.arange(24).reshape(4, 3, 2)
 fe = np.arange(4)
@@ -330,13 +349,17 @@ fe = np.arange(4)
 #print(bayesian_averaging(fe, qs))
 
 #q_state = np.array([[0, 1], [0.8, 0.2], [0.01, 0.99]])
-start_state = [0.01, 0.99]
-start_obs = [0.1, 0.9]
+start_state = [1, 0]
+start_obs = [1, 0]
 
 policies = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
-policies = np.array([np.array(i) for i in itertools.product([0, 1], repeat=2)])
+policies = np.array([np.array(i) for i in itertools.product([0, 1], repeat=5)])
+
+p_obs = np.array([[1, 0], [1, 0], [0, 1], [1, 0]])
+p_obs = np.broadcast_to(np.array([0.5, 0.5]), (policies.shape[1], 2))
+p_obs = np.array([0.6, 0.4])
 
 predict_and_act(p_obs, start_state, policies)
-#print(normalize([0.08, 0.56]))
+
 #print(exp_free_energy_per_policy(policies, np.array([0.1, 0.9])))
 #print(act(q_state, [0, 1]))
