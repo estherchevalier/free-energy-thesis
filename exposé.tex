@@ -1,0 +1,235 @@
+\documentclass[11pt,
+  paper=a4,
+  bibliography=totocnumbered,
+	captions=tableheading,
+	BCOR=10mm
+]{scrreprt}
+
+
+
+\usepackage[utf8]{inputenc}
+
+
+\usepackage[onehalfspacing]{setspace}
+\usepackage{csquotes} % Context sensitive quotation.
+\usepackage{amsmath} % Standard math.
+\usepackage{amsthm} % Math theorems.
+\usepackage{amssymb} % More math symbols.
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[chapter]
+
+\usepackage[section]{placeins} % Keep floats in the section they were defined in.
+\usepackage{tabularx}
+\usepackage{booktabs} % Scientific table styling.
+\usepackage{floatrow} % Option for keeping floats in the place they were defined in the code.
+\floatsetup[table]{style=plaintop}
+\usepackage{hyperref} % Hyperlinks.
+\usepackage[all]{nowidow} % Prevent widows and orphans.
+\usepackage{xstring} % logic string operations
+\usepackage{bbm} % \mathbb on numerals.
+\usepackage{csquotes}
+\usepackage{mathtools}
+\usepackage[ruled,vlined]{algorithm2e} % Pseudocode
+\usepackage{scrhack} % Make warning go away.
+\usepackage{graphicx}
+\usepackage{subcaption} % Subfigures with subcaptions.
+\usepackage{authoraftertitle} % Make author, etc., available after \maketitle
+\usepackage{listofitems}
+\usepackage{blindtext} % Placeholder text.
+\usepackage[automake, nopostdot, nonumberlist]{glossaries} % glossary for definitions and acronyms, without dot after entry and page reference
+\makeglossaries % Generate the glossary
+
+% \PassOptionsToPackage{obeyspaces}{url}%
+\usepackage[backend=bibtex,%
+style=nature,%
+doi=true,isbn=false,url=false, eprint=false]{biblatex}
+% \renewbibmacro*{url}{\printfield{urlraw}}
+
+\addbibresource{free_energy.bib}
+
+\DeclareStyleSourcemap{
+  \maps[datatype=bibtex, overwrite=true]{
+    \map{
+      \step[fieldsource=url, final]
+      \step[typesource=misc, typetarget=online]
+    }
+    \map{
+      \step[typesource=misc, typetarget=patent, final]
+      \step[fieldsource=institution, final]
+      \step[fieldset=holder, origfieldval]
+    }
+  }
+}
+
+%\linespread{1.5} % set line spacing
+
+\usepackage{listings} % rendering program code
+\lstset{% general command to set parameter(s)
+	basicstyle=\ttfamily\color{grey},          % print whole listing small
+	keywordstyle=\color{black}\bfseries\underbar,
+	% underlined bold black keywords
+	identifierstyle=,           % nothing happens
+	commentstyle=\color{white}, % white comments
+	stringstyle=\ttfamily,      % typewriter type for strings
+	showstringspaces=false}     % no special string spaces
+
+
+\DeclareFontFamily{U}{mathx}{\hyphenchar\font45}
+\DeclareFontShape{U}{mathx}{m}{n}{
+      <5> <6> <7> <8> <9> <10>
+      <10.95> <12> <14.4> <17.28> <20.74> <24.88>
+      mathx10
+      }{}
+\DeclareSymbolFont{mathx}{U}{mathx}{m}{n}
+\DeclareFontSubstitution{U}{mathx}{m}{n}
+\DeclareMathSymbol{\bigtimes}{1}{mathx}{"91}
+
+
+
+%%% Custom definitions %%%
+% Shorthands
+\newcommand{\ie}{i.\,e.~}
+\newcommand{\eg}{e.\,g.~}
+\newcommand{\ind}{\mathbbm{1}}
+% Functions
+\newcommand{\tpow}[1]{\cdot 10^{#1}}
+\newcommand{\figref}[1]{(Figure \ref{#1})}
+\newcommand{\figureref}[1]{Figure \ref{#1}}
+\newcommand{\tabref}[1]{(Table \ref{#1})}
+\newcommand{\tableref}[1]{Table \ref{#1}}
+\newcommand{\secref}[1]{%
+	\IfBeginWith{#1}{chap:}{%
+		(cf. Chapter \ref{#1})}%
+		{(cf. Section \ref{#1})}%
+		}
+\newcommand{\sectionref}[1]{%
+	\IfBeginWith{#1}{chap:}{%
+		Chapter \ref{#1}}%
+		{\IfBeginWith{#1}{s}{%
+			Section \ref{#1}}%
+			{[\PackageError{sectionref}{Undefined option to sectionref: #1}{}]}}}
+\newcommand{\chapref}[1]{(see chapter \ref{#1})}
+\newcommand{\unit}[1]{\,\mathrm{#1}}
+\newcommand{\unitfrac}[2]{\,\mathrm{\frac{#1}{#2}}}
+\newcommand{\codeil}[1]{\lstinline{#1}}{} % wrapper for preventing syntax highlight error
+\newcommand{\techil}[1]{\texttt{#1}}
+\newcommand{\Set}[2]{%
+  \{\, #1 \mid #2 \, \}%
+}
+% Line for signature.
+\newcommand{\namesigdate}[1][5cm]{%
+	\vspace{5cm}
+	{\setlength{\parindent}{0cm}
+	\begin{minipage}{0.3\textwidth}
+		\hrule
+		\vspace{0.5cm}
+		{\small City, date}
+	\end{minipage}
+	 \hfill
+	\begin{minipage}{0.3\textwidth}
+		\hrule
+		\vspace{0.5cm}
+	    {\small Signature}
+	\end{minipage}
+	}
+}
+% Automatically use the first sentence in a caption as the short caption.
+\newcommand\slcaption[1]{\setsepchar{.}\readlist*\pdots{#1}\caption[{\pdots[1].}]{#1}}
+
+% Variables.
+% Adapt if necessary, use to refer to figures and graphics.
+\def \figwidth {0.9\linewidth}
+\graphicspath{ {./graphics/figures/}{./graphics/figures/} } % Path to figures and images.
+
+
+% Customizations of existing commands.
+\renewcommand{\vec}[1]{\mathbf{#1}}
+% Capitalized \autoref names.
+\renewcommand*{\chapterautorefname}{Chapter}
+\renewcommand*{\sectionautorefname}{Section}
+
+
+% TODO Fill with your data.
+\title{Towards a minimalistic free energy agent}
+\author{Esther Chevalier}
+
+\begin{document}
+
+\begin{titlepage}
+
+	\vspace{1,5cm}
+	\centering{
+        \includegraphics[scale=0.5]{graphics/unilogo}\vspace{0.6cm}\\
+        {\Large Fachbereich Humanwissenschaften \\
+		Institute of Cognitive Science}\vspace{0.3cm}\\
+        Bachelor's Program Cognitive Science\vspace{1cm}\\
+		\textit{Exposé}  \\
+        \vspace{1cm}
+		\textbf{\Large{\MyTitle}}
+		\vspace{1cm}\\
+		\begin{tabular}{c}
+			\MyAuthor                  \\
+            Matriculation number 972437 \\
+            10/2020           \\
+
+
+		\end{tabular}}
+	\vspace{1cm}
+
+
+    \vspace{5.5cm}
+
+    \begin{tabular}{m{5cm} m{3cm} m{5cm} }
+
+        Esther Chevalier  && \\
+        Springmannskamp 3 && E-mail: \href{mailto:echevalier@uos.de}{echevalier@uos.de}\\
+        49090 Osnabrück   && Tel: 01573 57 20 346 \\
+
+    \end{tabular}
+
+
+
+\end{titlepage}
+
+\vspace{4cm}
+
+\tableofcontents
+\thispagestyle{empty}
+
+\chapter{Exposé}
+\section{Current state of research}
+\pagenumbering{arabic}
+
+Karl Friston proposes and defends a new formulation habit forming, learning and behavior optimisation in biological agents \cite{}. The principle he developed over the years rests upon a theoretical framework previously used in statistical thermodynamics. In particular, the concept developed by Richard Feynman, the variational free energy is central to Friston's hypothesis about behaviour learning. Friston has already the free energy framework to formulate and model research questions coming from multiple disciplines, such as computational psychiatry, theoretical biology and artificial intelligence \cite{}. Friston hypothesize the free energy principle as being more than a simple model of an agent's behavior - it is rather a single feature determining if a biological system is agentic or not.
+
+The free energy principle has a range of properties making it to an elegant model of an agent's behavior an learning patterns. In particular, learning processes in an artificial agent could be described without using external rewards and penalties, as reinforcement learning does. The free energy principle relies on a functional about beliefs about the environmental states the agent can find itself in. The behavior of the agent can be described as ``Act to see what you expect to see.''. The optimization of a single value, the free energy of each action taken by the agent, leads the agent to make assumptions about the environment and to act optimally given its assumptions and its perceptions. The emerging behavior is characterized by the inferences made by the agent and driven by the action it takes - it is therefore called active inference.
+
+\section{Problem}
+
+The free energy principle stays obscure and difficult to understand \cite{}, presumably because of the number of different topics the author addresses. The topic remains primarly investigated by Friston himself, as first or second author. There is a lack of a comprehensive review for early-career scientists who do not have a formal training in physics or other disciplines necessary to understand the free energy framework. The difficulty to understand the topic is worsen by the unavailability of source code used in free energy agent simulation in Friston's work e.g. FristonDOOM.
+
+In addition, the free energy principle roots in a deeply physical framework, visible by the vocabulary and concepts used for its formulation \cite{}. As stated before, this specialisation hinders the utilisation of the framework by other scientists trained in other fields. The formulation by Friston in his paper in 2006 does not use the vocabulary with the rigour needed. The free energy has since then been adapted to an information theoric framework \cite{Friston2016}. This reformulation begs the question which concepts are essential for a formulation of the free energy principle and which are not.
+
+\section{Research question}
+
+The goal of this thesis is to implement a free energy agent capable of making inferences in a given environment and learning new behavior based on those inferences. The agent should be as minimalistic as possible to understand what features an agent needs in order to optimize its free energy and its behavior.
+
+
+
+
+
+
+
+\section{Thesis goal and objectives}
+\section{Methods}
+\section{Preliminary thesis structure}
+\section{Preliminary time schedule}
+\section{Relevant literature}
+
+
+\glsaddall
+\printglossaries
+
+\printbibliography
+
+\end{document}
