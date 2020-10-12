@@ -18,6 +18,7 @@
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}[chapter]
 
+\usepackage{pgfgantt}
 \usepackage[section]{placeins} % Keep floats in the section they were defined in.
 \usepackage{tabularx}
 \usepackage{booktabs} % Scientific table styling.
@@ -98,7 +99,7 @@ doi=true,isbn=false,url=false, eprint=false]{biblatex}
 \newcommand{\tabref}[1]{(Table \ref{#1})}
 \newcommand{\tableref}[1]{Table \ref{#1}}
 \newcommand{\secref}[1]{%
-	\IfBeginWith{#1}{chap:}{%
+	\IfBeginWith{#1}{chap:}{%s
 		(cf. Chapter \ref{#1})}%
 		{(cf. Section \ref{#1})}%
 		}
@@ -170,14 +171,14 @@ doi=true,isbn=false,url=false, eprint=false]{biblatex}
 		\begin{tabular}{c}
 			\MyAuthor                  \\
             Matriculation number 972437 \\
-            10/2020           \\
+            12/10/2020           \\
 
 
 		\end{tabular}}
-	\vspace{1cm}
+	\vspace{3cm}
 
-
-    \vspace{5.5cm}
+    Version 1
+    \vspace{3.5cm}
 
     \begin{tabular}{m{5cm} m{3cm} m{5cm} }
 
@@ -196,36 +197,91 @@ doi=true,isbn=false,url=false, eprint=false]{biblatex}
 \tableofcontents
 \thispagestyle{empty}
 
-\chapter{Exposé}
+\chapter{Motivation}
 \section{Current state of research}
 \pagenumbering{arabic}
 
-Karl Friston proposes and defends a new formulation habit forming, learning and behavior optimisation in biological agents \cite{}. The principle he developed over the years rests upon a theoretical framework previously used in statistical thermodynamics. In particular, the concept developed by Richard Feynman, the variational free energy is central to Friston's hypothesis about behaviour learning. Friston has already the free energy framework to formulate and model research questions coming from multiple disciplines, such as computational psychiatry, theoretical biology and artificial intelligence \cite{}. Friston hypothesize the free energy principle as being more than a simple model of an agent's behavior - it is rather a single feature determining if a biological system is agentic or not.
+Karl Friston proposes and defends a new formulation of habit-forming, learning and behavior optimization in biological agents \cite{Friston2006}. The principle he developed over the years rests upon a theoretical framework previously used in statistical thermodynamics. In particular, the concept developed by Richard Feynman, the variational free energy is central to Friston's hypothesis about behavior learning. The free energy framework has already been used to formulate and model research questions coming from multiple disciplines, such as computational psychiatry, theoretical biology and artificial intelligence \cite{Friston2016}. Friston hypothesize the free energy principle as being more than a model of an agent's behavior. Instead, he considers it to be the only strictly necessary feature for determining if a biological system is an agent \cite{Friston2010}.
 
-The free energy principle has a range of properties making it to an elegant model of an agent's behavior an learning patterns. In particular, learning processes in an artificial agent could be described without using external rewards and penalties, as reinforcement learning does. The free energy principle relies on a functional about beliefs about the environmental states the agent can find itself in. The behavior of the agent can be described as ``Act to see what you expect to see.''. The optimization of a single value, the free energy of each action taken by the agent, leads the agent to make assumptions about the environment and to act optimally given its assumptions and its perceptions. The emerging behavior is characterized by the inferences made by the agent and driven by the action it takes - it is therefore called active inference.
+The free energy principle has a range of properties making it to an elegant model of an agent's behavior and learning patterns. In particular, learning processes in an artificial agent could be described without using external rewards and penalties, unlike reinforcement learning. The behavior of the agent can be described as ``Act to see what you expect to see''. The optimization of a single value, the free energy of each action taken by the agent, leads the agent to make assumptions about the environment and to act optimally given its assumptions and its perceptions. The emerging behavior is characterized by the inferences made by the agent and driven by the action it takes - it is therefore called active inference. Moreover, the agent can optimize the inferences it makes by learning progressively. The agent's model about the environment's causal structure and other parameters are optimized incrementally.
 
 \section{Problem}
 
-The free energy principle stays obscure and difficult to understand \cite{}, presumably because of the number of different topics the author addresses. The topic remains primarly investigated by Friston himself, as first or second author. There is a lack of a comprehensive review for early-career scientists who do not have a formal training in physics or other disciplines necessary to understand the free energy framework. The difficulty to understand the topic is worsen by the unavailability of source code used in free energy agent simulation in Friston's work e.g. FristonDOOM.
+The free energy principle stays obscure and difficult to understand \cite{McGregor2015}, due amongst other things to some inconsistencies in Friston's argumentation and the formulation of the free energy principle \cite{Sims2016}. The topic remains primarily investigated by Friston himself, as first or second author. There is a lack of a comprehensive review for early-career scientists who do not have a formal training in physics or other disciplines necessary to understand the free energy framework in its current formulation. The difficulty understanding the topic is worsened by the unavailability of source code used in free energy agent simulation in Friston's work e.g. \cite{Cullen2018}.
 
-In addition, the free energy principle roots in a deeply physical framework, visible by the vocabulary and concepts used for its formulation \cite{}. As stated before, this specialisation hinders the utilisation of the framework by other scientists trained in other fields. The formulation by Friston in his paper in 2006 does not use the vocabulary with the rigour needed. The free energy has since then been adapted to an information theoric framework \cite{Friston2016}. This reformulation begs the question which concepts are essential for a formulation of the free energy principle and which are not.
+In addition, the free energy principle roots in a deeply physical framework, visible by the vocabulary and concepts used for its formulation \cite{Friston2006}. The free energy has since then been adapted to an information theoric framework \cite{Friston2016}. This reformulation begs the question of which concepts and tools are essential for a formulation of the free energy principle and which are not. The free energy principle could be then explained with the lighter version, using the strictly necessary concepts and ideas. This formulation could, if done properly, be more accessible to students and scientists.
 
 \section{Research question}
 
-The goal of this thesis is to implement a free energy agent capable of making inferences in a given environment and learning new behavior based on those inferences. The agent should be as minimalistic as possible to understand what features an agent needs in order to optimize its free energy and its behavior.
+Currently, the research question which will guide this bachelor thesis is as follows: Can the free-energy framework be adapted to a simple agent, with (relatively) few features? If so, which features are strictly necessary in order to make the agent act and learn efficiently?
 
+The research question is subject to change during the work process.
 
-
-
-
-
+\chapter{Suggested methodology}
 
 \section{Thesis goal and objectives}
+
+The goal of this thesis is to implement a free energy agent capable of making inferences in a given environment and learning new behavior based on those inferences. The agent should be as minimalistic as possible. This allows to understand which features an agent strictly needs in order to optimize its free energy and therefore its behavior. This kind of work has not been done in the current literature yet, although there is at least one (non-published) article which pursue this exact goal \cite{McGregor2015}.
+
+The thesis aims to explain the free-energy principle as concisely as possible to avoid distraction from its core mechanism. It should provide interested students with basic knowledge in probability and information theory the necessary tools to understand active inference and the associated learning processes. The previously mentioned implementation will be used as a concrete example. The challenge lies in narrowing down the free-energy principle to its essence. During the process, it will become clear if the free-energy principle is an adequate tool to make a simple agent behave coherently in a given environment. It will also be part of the project to analyze the weaknesses and benefits of the free-energy approach in a simple context.
+
 \section{Methods}
+
+The thesis will include a theoretical and practical section. The theoretical section will primarily rely on a literature research. It aims to lay the foundation of theoretical tools needed to understand the free-energy principle. The hands-on work is about writing a relatively short piece of code, doing both active inference and learning to use the free-energy framework. The piece of code provides a sandbox for all interested readers and a tool for understanding the free-energy principle with a hands-on experiment.
+
+The code will be written using Python 3.7 and various packages, e.g. NumPy, matplotlib and others. The code will presumably include a small neural network, used for the learning process. If used, it will be implemented using the library TensorFlow. The code will be available on GitHub.
+
+Additionally, the thesis will include a section analyzing the fitness of the framework for this particular agent given its goal and its environment. Strengths and weaknesses of this framework will emerge from the upcoming coding work process and the related literature research. It is not part of the thesis to make an explicit comparison to other learning or inference methods (such as reinforcement learning or Bayesian inference)
+
 \section{Preliminary thesis structure}
+
+The thesis will contain three chapters; the theoretical background, the practical part and the analysis of the resulting agent. The theoretical background should cover every aspect necessary to understand the framework. It is still not clear, which information is essential for the reader to understand the free-energy principle as this will emerge from the coding process.
+
+The practical part will explain and go through the code in a step-by-step manner. The final section will contain an analysis of the previous code, it's main characteristics, how it compares to Friston's previous work and its strengths and weaknesses.
+
+
+
+\begin{enumerate}
+    \item Theoretical background
+    \item Implementation of a minimalistic agent
+    \item Strengths and weaknesses of the framework
+\end{enumerate}
+
+\chapter{Organisational matters}
+
 \section{Preliminary time schedule}
+
+
+\begin{table}[h]
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{@{}lccccl@{}}
+        \toprule
+        \multicolumn{1}{c}{} & \textbf{Duration} & \textbf{Start date} & \textbf{End date} & \textbf{Size} & \multicolumn{1}{c}{\textbf{Remarks}} \\ \midrule
+        \multicolumn{1}{l|}{\begin{tabular}[c]{@{}l@{}}Practical part - \\ Programming of agent\end{tabular}} & 3 weeks & 12 Oct & 30 Oct &  &  \\ \midrule
+        \multicolumn{1}{l|}{\begin{tabular}[c]{@{}l@{}}Writing -\\ Practical part\end{tabular}} & 2 weeks & 26 Oct & 6 Nov &  6-8 pages &  \\ \midrule
+        \multicolumn{1}{l|}{Registration} & 1 day & 26 Oct & 30 Oct &  & \begin{tabular}[c]{@{}l@{}}Depends if Prof Pipa\\  is available as \\ second supervisor\end{tabular} \\ \midrule
+        \multicolumn{1}{l|}{Final thesis structure} & 5 days & 9 Nov & 13 Nov &  &  \\ \midrule
+        \multicolumn{1}{l|}{\begin{tabular}[c]{@{}l@{}}Writing -\\ Theoretical part\end{tabular}} & 3 weeks & 16 Nov & 4 Dec & 10 pages &  \\ \midrule
+        \multicolumn{1}{l|}{\begin{tabular}[c]{@{}l@{}}Writing -\\ Analytical part\end{tabular}} & 2 weeks & 7 Dec & 18 Dec & $\sim$7 pages &  \\ \midrule
+        \multicolumn{1}{l|}{\begin{tabular}[c]{@{}l@{}}Short presentation - \\ (Seminar Academic Writing)\end{tabular}} & 1 day & 11 Dec &  &  & not obligatory \\ \midrule
+        \multicolumn{1}{l|}{Winter break} & 2 weeks & 19 Dec & 2 Jan &  &  \\ \midrule
+        \multicolumn{1}{l|}{\begin{tabular}[c]{@{}l@{}}Writing - \\ Analytical part\end{tabular}} & 1 week & 4 Jan & 8 Jan & 3-4 pages &  \\ \midrule
+        \multicolumn{1}{l|}{\begin{tabular}[c]{@{}l@{}}Writing - \\ Introduction\end{tabular}} & 2 days & 11 Jan & 12 Jan & 2-3 pages &  \\ \midrule
+        \multicolumn{1}{l|}{\begin{tabular}[c]{@{}l@{}}Writing - \\ Conclusion\end{tabular}} & 2 days & 13 Jan & 14 Jan & 3-4 pages &  \\ \midrule
+        \multicolumn{1}{l|}{\begin{tabular}[c]{@{}l@{}}Formatting / \\ Proof-reading\end{tabular}} & 2 weeks & 11 Jan & 22 Jan &  &  \\ \midrule
+        \multicolumn{1}{l|}{Printing} & 1 day & 25 Jan & 29 Jan &  &  \\ \midrule
+        \multicolumn{1}{l|}{Submission} & 1 day & 25 Jan & 29 Jan &  & Date not set yet \\ \bottomrule
+    \end{tabular}%
+    }
+\end{table}
+
 \section{Relevant literature}
 
+The relevant literature can be found on Mendeley, in the public group free\_energy. It accessible via the following URL: \url{https://www.mendeley.com/community/free-energy-5/}. The content will be updated regularly.
+
+\section{Further remarks}
+
+This exposé is subject to change at any given time, depending on insights coming from the work process and literature research. It will be updated regularly.
 
 \glsaddall
 \printglossaries
