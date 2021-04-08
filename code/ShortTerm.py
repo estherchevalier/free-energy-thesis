@@ -33,13 +33,13 @@ class ShortTerm:
         self.agent = agent
 
         # Prior belief about environment
-        self.belief_hint_reliability = np.array([reliability_prior, 1-reliability_prior])
+        self.r = self.agent.r
 
 
     def __str__(self):
 
         pres = "\n#### Short Term ####\n"
-        hint = "Belief about hint reliability:\n" + str(self.belief_hint_reliability) + '\n'
+        hint = "Belief about hint reliability:\n" + str(self.r) + '\n'
 
         return pres + hint
 
@@ -55,7 +55,12 @@ class ShortTerm:
             factor = (A[1]+ A[2])
             p = A[1] / factor
 
+            # If reliability prior = 0, then hint accuracy is 50%
             reliability = remove_zeros([r/2 + .5, 1-(r/2 + .5)])
+
+            # If reliability prior = 0, then hint accuracy is 0%
+            # reliability = remove_zeros([r, 1-r])
+
             reliability = reliability[hint-1]
 
             p = (reliability * p) / ((reliability * p) + (1-reliability) * (1-p))

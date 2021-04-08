@@ -11,13 +11,15 @@ from ShortTerm import ShortTerm
 
 class Agent:
 
-    def __init__(self, env, T=1, food_is_left_prior=.75,
+    def __init__(self, env, T=1, food_is_right_prior=.75,
                                 reliability_prior=.98,
+                                policy=None,
                                 mode='inference'):
 
+        self.mode = mode
 
         #self.belief_food_location = np.array([1, food_is_left_prior, 1-food_is_left_prior, 1])
-        self.p = food_is_left_prior
+        self.p = 1 - food_is_right_prior
         self.r = reliability_prior
         self.A = np.array([0, self.p, 1-self.p, 0])
 
@@ -26,7 +28,7 @@ class Agent:
 
 
         self.env = env
-        self.long_term = LongTerm(self, food_is_left_prior)
+        self.long_term = LongTerm(self, policy)
         self.short_term = ShortTerm(self, reliability_prior)
 
         self.temperature = T
@@ -34,19 +36,13 @@ class Agent:
         self.time_step = 0
         self.hint = -1
 
-
-        # Keeping track of past states and n_observations
-        # Maybe logging more appropriate (see self.reset)
-        self.past_states_all = list()
-        self.past_states_current_episode = list()
-
         # At the beginning, the agent is at location 0
         # and is certain about it (=> q(location 0 | time step 0) = 1)
         self.start_state = np.array([[1,0,0,0],[1,0,0,0]])
         self.current_state = self.start_state
 
         self.info = False
-        self.mode = mode
+
 
 
     def __str__(self):
@@ -74,67 +70,24 @@ class Agent:
 
         self.time_step = 0
         self.hint = -1
+
         self.p = A[1]
         self.A = A
+
         self.start_state = np.array([[1,0,0,0],[1,0,0,0]])
         self.current_state = self.start_state
 
-        # To optimize through learning
-        # self.belief_food_location = np.array([1, self.food_is_left_prior, 1-self.food_is_left_prior, 1])
+        # Optimize through learning Environmental model
+        # here: A
         self.long_term.reset(A)
 
-        # Keeping track of past states and n_observations
-        # TODO logging more appropriate
-        self.past_states_all += self.past_states_current_episode
-        self.past_states_current_episode = list()
 
 
-        #self.temperature -= 1
-
-
-    # def episode(self, mode="learning", info=True):
-    #
-    #     actions = []
-    #     rewards = 0
-    #
-    #     if info:
-    #         self.env.render(self.A, self.r)
-    #
-    #     while self.time_step < 2:
-    #
-    #         exp_reward, action, q_s = self.expected_reward()
-    #         true_reward = self.execute_action(action)
-    #         rewards += true_reward
-    #
-    #         if mode == "learning":
-    #
-    #             A = self.learn(q_s, true_reward)
-    #             self.long_term.A = A
-    #
-    #
-    #         if info:
-    #             self.env.render(self.long_term.A, self.r)
-    #             print("Expected reward", exp_reward, "True reward", true_reward)
-    #             #print(self)
-    #
-    #         actions.append(action)
-    #         self.time_step += 1
-    #
-    #
-    #
-    #     if mode == "learning":
-    #         self.reset(self.long_term.A, self.r)
-    #     else:
-    #         self.reset(np.array([0, self.p, 1-self.p, 0]), self.r)
-    #
-    #
-    #     return rewards
-
-
-    def episode(self, info=True):
+    def episode(self, info=False):
 
         actions = []
-        rewards = []
+        outcomes = []
+        rewards = [0]
         reward = 0
 
         if info:
@@ -142,22 +95,23 @@ class Agent:
 
         while self.time_step < 2:
 
-            if self.mode == "learning":
-
-                ### Missing: absorbing states
-
-                q_s = self.long_term.sample_states()
-                o = self.long_term.sample_outcomes(q_s)
-
-                A = self.learn(q_s, o[:, self.time_step+1])
-                # numbers_pol = self.long_term.policies.shape[0]
-                # rewards = np.tile(reward, numbers_pol)
-                #A = self.learn(q_s, rewards)
-                self.A = A
-
-                if info:
-                    print("After gradient descent:")
-                    self.env.render(self.A, self.r)
+            # if self.mode == "learning":
+            #
+            #     ### Missing: absorbing states
+            #
+            #     q_s = self.long_term.sample_states()
+            #     o = self.long_term.sample_outcomes(q_s)
+            #
+            #     A = self.learn(q_s, o[:, self.time_step+1])
+            #
+            #     # numbers_pol = self.long_term.policies.shape[0]
+            #     # rewards = np.tile(reward, numbers_pol)
+            #     # A = self.learn(q_s, rewards)
+            #     self.A = A
+            #
+            #     if info:
+            #         print("After gradient descent:")
+            #         self.env.render(self.A, self.r)
 
 
             self.long_term.A = self.A
@@ -173,9 +127,10 @@ class Agent:
             exp_reward = self.long_term.expected_reward(q_s, action)
 
             reward += true_reward
-
-
-
+            rewards.append(true_reward)
+            #print(self.p, self.A)
+            outcomes.append(o[:, self.time_step+1])
+            #print(outcomes)
 
             if info:
                 self.env.render(self.long_term.A, self.r)
@@ -186,12 +141,32 @@ class Agent:
             self.time_step += 1
 
         if self.mode == "learning":
+
+            ### Missing: absorbing states
+
+            #q_s = self.long_term.sample_states()
+            #o = self.long_term.sample_outcomes(q_s)
+
+            rewards = np.tile(rewards, self.long_term.policies.shape[0]).reshape(-1, 3)
+
+            A = self.learn(q_s, rewards[:, 1])
+
+            # numbers_pol = self.long_term.policies.shape[0]
+            # rewards = np.tile(reward, numbers_pol)
+            # A = self.learn(q_s, rewards)
+            self.A = A
+
+            if info:
+                print("After gradient descent:")
+                self.env.render(self.A, self.r)
+
+        if self.mode == "learning":
             self.reset(self.long_term.A, self.r)
         else:
             self.reset(np.array([0, self.p, 1-self.p, 0]), self.r)
 
 
-        return reward
+        return reward, np.array(outcomes)
 
 
 
@@ -200,18 +175,18 @@ class Agent:
         rewards = list()
 
         for i in range(n_episodes):
-            print("###### Episode " + str(i+1) + " ####")
+            # print("###### Episode " + str(i+1) + " ####")
 
             if i % 10 == 0:
-                r = self.episode(info=info)
+                r = self.episode(info=False)[0]
             else:
-                r = self.episode()
+                r = self.episode()[0]
 
             rewards.append(r)
             #print(rewards)
 
         accuracy = np.count_nonzero(rewards) / n_episodes
-        print("Accuracy:", accuracy)
+        #print("Accuracy:", accuracy)
 
         return accuracy, self.A
 
@@ -234,7 +209,7 @@ class Agent:
 
         As = np.array(As)
 
-        print(As)
+        #print(As)
 
         A = np.average(As, axis=0, weights=self.long_term.q_pi)
         #print("New A", A)
@@ -269,35 +244,6 @@ class Agent:
 
         return reward
 
-    def expected_reward(self, info=False):
-
-        fe, q_s = self.long_term.exp_free_energy_all_policies()
-        q_u, q = self.long_term.bayesian_averaging(fe, q_s)
-        action = self.action_selection(q_u)
-
-        if info:
-            print("Free energy per policy", fe)
-            print("Expected reward over all\n", q, "\n")
-            print("## Action taken ##", action)
-
-        exp_reward = self.long_term.expected_reward(q, action)
-
-        return exp_reward, action, q_s
-
-    # def expected_reward(self, info=False):
-    #
-    #     fe, q_s = self.long_term.exp_free_energy_all_policies()
-    #     q_u, q = self.long_term.bayesian_averaging(fe, q_s)
-    #     action = self.action_selection(q_u)
-    #
-    #     if info:
-    #         print("Free energy per policy", fe)
-    #         print("Expected reward over all\n", q, "\n")
-    #         print("## Action taken ##", action)
-    #
-    #     exp_reward = self.long_term.expected_reward(q, action)
-    #
-    #     return exp_reward, action, q_s
 
 
     def belief_updating(self, hint):
@@ -313,16 +259,17 @@ if __name__ == "__main__":
     np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
     env = Environment()
     a = Agent(env)
+    a.long_term.policies = np.array([[3,1]])
 
-    print(a.execute_action(2))
+    print(a.episode(info=True))
 
 
-
-    states = np.array([[[1,0,0,0],[1,0,0,0]],
-                        [[0,1,0,0],[0,1,0,0]],
-                        [[0,0,1,0],[0,0,1,0]],
-                        [[0,0,0,1],[0,0,0,1]]]
-                        )
+    #
+    # states = np.array([[[1,0,0,0],[1,0,0,0]],
+    #                     [[0,1,0,0],[0,1,0,0]],
+    #                     [[0,0,1,0],[0,0,1,0]],
+    #                     [[0,0,0,1],[0,0,0,1]]]
+    #                     )
 
     #states = np.identity(4)
 

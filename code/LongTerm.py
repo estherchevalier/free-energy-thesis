@@ -62,7 +62,7 @@ def softmax(x, T=1):
 
 class LongTerm:
 
-    def __init__(self, a, food_is_left_prior):
+    def __init__(self, a, policy):
 
 ### Fixed variables
         self.agent = a
@@ -74,21 +74,13 @@ class LongTerm:
         # Action 3: go to location 4, bottom arm, location of hint
         self.actions = np.arange(4)
 
-        # All possible action sequences in two time steps
-        self.policies =np.array([(0, 0),
-                                (0, 1),
-                                (0, 2),
-                                (0, 3),
-                                (1, 1),
-                                (2, 2),
-                                (3, 0),
-                                (3, 1),
-                                (3, 2),
-                                (3, 3),
-                                ])
+        if policy is None:
+            # All possible action sequences in two time steps
+            self.policies = np.array([p for p in product(self.actions, repeat=2)])
 
-
-        self.policies = np.array([p for p in product(self.actions, repeat=2)])
+        else:
+            # Manually initialize which policies to consider
+            self.policies = np.array(policy)
 
 
 ## Environmental model
@@ -99,7 +91,7 @@ class LongTerm:
         # shape: (2, 4) = 2 contexts, 4 possible states
 
         #self.p_obs = softmax([[0,3,-3,0],[0,-3,3,0]]
-        self.p_obs = 1
+        self.p_obs = np.array([1, 0])
 
 
         p = self.agent.p
@@ -107,7 +99,6 @@ class LongTerm:
         # p(o|s)
         self.A = np.array([0, p, (1-p), 0])
 
-        self.visited_hint = False
 
 
         # Transition p(state at time t | state at t-1, action)
@@ -124,6 +115,7 @@ class LongTerm:
 
         self.B = self.agent.env.true_B
 
+        self.visited_hint = False
 
 
     def __str__(self):
@@ -144,13 +136,11 @@ class LongTerm:
         # else:
         #     self.p_obs = softmax([[0,3,-3,0],[0,-3,3,0]])
 
-    def update_A(self):
 
-        A = self.agent.belief_updating(1)
-        #self.A = np.array([0, p, (1-p), 0])
-        self.A = A
+########## Active Inference ######################
 
 
+### Expected free energy ###
 
     def expected_free_energy(self, expected_state, expected_outcome, info=False):
 
@@ -163,12 +153,8 @@ class LongTerm:
 
         expected_state: (2d-array)  The state the agent expects to be in at a
                                     particular time step t. Formally: q(s_t | policy)
-        action: (int)               Action taken at time step t.
+        expected_outcome: (int)
         """
-        # Expected observation
-        # exp_obs = expected_state @ self.B[action] @ self.A
-
-
 
         # Complexity (= cost) term
         # Kullback-Leibler-Divergence between expected observation if action a is
@@ -176,7 +162,7 @@ class LongTerm:
         # The higher the difference the less attractive the action to the agent.
 
         #cost = mean_square_error(expected_outcome, self.p_obs)
-        cost = kl([expected_outcome, 1-expected_outcome], [self.p_obs, 1-self.p_obs])
+        cost = kl([expected_outcome, 1-expected_outcome], self.p_obs)
 
         # Ambiguity (or uncertainty) term
         # The lower the uncertainty, the more attractive the action to the agent.
@@ -194,107 +180,6 @@ class LongTerm:
             print()
 
         return exp_free_energy
-
-
-    def sample_states_per_policy(self, policy, info=False):
-
-        """ Compute free energy of each policy.
-
-        Returns: q_states_policy  (2d-array)    The expected future states if
-                                                policy is followed
-        """
-
-        current_state = np.average(self.agent.start_state, axis=0)
-        q_states_policy = [current_state]
-
-        for time_step, action in enumerate(policy):
-
-            exp_state_after_action = current_state @ self.B[action]
-            current_state = exp_state_after_action
-
-            q_states_policy.append(exp_state_after_action)
-
-            if info:
-                print("Action:", action)
-                print("Expected state after action", exp_state_after_action,'\n\n')
-
-        return np.array(q_states_policy)
-
-
-    def sample_states(self, info=False):
-
-        """
-        Computes the free energy of different policies. The free energy of each
-        action is predicted and then summed up to obtain the policy's free energy.
-
-        """
-
-        q_state = list()
-        policies = self.policies#[:, self.agent.time_step:]
-
-        for policy in policies:
-
-            q_states_policy = self.sample_states_per_policy(policy)
-            q_state.append(q_states_policy)
-
-
-        if info:
-            print("\n\nPolicy:\n", policies)
-            print("Q-states\n", np.array(q_state))
-
-
-        return np.array(q_state)
-
-
-    def sample_outcomes(self, q_states):
-
-        A = self.A
-        outcomes = list()
-
-        for q_state in q_states:
-
-            outcome = list()
-
-            for q_s in q_state:
-
-                action = np.argmax(q_s)
-
-                o = q_s @ A
-                outcome.append(o)
-
-                if action == 1 or action == 2:
-                    A = np.zeros(4)
-
-            outcomes.append(outcome)
-            A = self.A
-
-        return np.array(outcomes)
-
-
-    def exp_free_energy_all_policies(self, q_states, q_outcomes, info=False):
-
-        """
-        Computes the free energy of different policies. The free energy of each
-        action is predicted and then summed up to obtain the policy's free energy.
-
-        """
-        exp_free_energies = list()
-
-        for q_s, q_o in zip(q_states, q_outcomes):
-
-            fe_policy = self.exp_free_energy_per_policy(q_s, q_o)
-            exp_free_energies.append(fe_policy)
-
-
-        exp_free_energies = np.array(exp_free_energies)
-
-        if info:
-            print("\n\nPolicy:\n", policies)
-            print("\nFree energy:", exp_free_energies)
-
-        return exp_free_energies
-
-
 
 
     def exp_free_energy_per_policy(self, q_state, q_outcome, info=False):
@@ -341,128 +226,125 @@ class LongTerm:
 
         return fe_policy
 
+    def exp_free_energy_all_policies(self, q_states, q_outcomes, info=False):
+
+        """
+        Computes the free energy of different policies. The free energy of each
+        action is predicted and then summed up to obtain the policy's free energy.
+
+        """
+        exp_free_energies = list()
+
+        for q_s, q_o in zip(q_states, q_outcomes):
+
+            fe_policy = self.exp_free_energy_per_policy(q_s, q_o)
+            exp_free_energies.append(fe_policy)
 
 
+        exp_free_energies = np.array(exp_free_energies)
+
+        if info:
+            print("\n\nPolicy:\n", policies)
+            print("\nFree energy:", exp_free_energies)
+
+        return exp_free_energies
+
+#### Sampling from the generative model ########
 
 
+    def sample_states(self, info=False):
+
+        """
+        Computes the free energy of different policies. The free energy of each
+        action is predicted and then summed up to obtain the policy's free energy.
+
+        """
+
+        q_state = list()
+        policies = self.policies#[:, self.agent.time_step:]
+
+        for policy in policies:
+
+            q_states_policy = self.sample_states_per_policy(policy)
+            q_state.append(q_states_policy)
 
 
+        if info:
+            print("\n\nPolicy:\n", policies)
+            print("Q-states\n", np.array(q_state))
 
 
-    #
-    # def exp_free_energy_per_policy(self, policy, info=False):
-    #
-    #     """ Compute free energy of each policy.
-    #
-    #     Returns: q_states_policy  (2d-array)    The expected future states if
-    #                                             policy is followed
-    #     """
-    #
-    #
-    #
-    #     fe_policy = 0
-    #     current_state = self.agent.current_state
-    #
-    #     q_states_policy = [np.average(self.agent.start_state, axis=0)]
-    #     reward = 0
-    #
-    #     for time_step, action in enumerate(policy):
-    #
-    #         if action == 3 and not self.visited_hint and time_step == 0:
-    #             self.visited_hint = True
-    #             #self.p_obs = self.p_obs[0]
-    #             current_state = current_state[0]
-    #             self.update_A()
-    #
-    #         exp_free_energy = self.expected_free_energy(current_state, action)
-    #         fe_policy += exp_free_energy
-    #
-    #         exp_state_after_action = current_state @ self.B[action]
-    #         current_state = exp_state_after_action
-    #
-    #         if exp_state_after_action.ndim == 2:
-    #             exp_state_after_action = np.average(exp_state_after_action, axis=0)
-    #
-    #         q_states_policy.append(exp_state_after_action)
-    #
-    #         if info:
-    #             print("Action:", action)
-    #             print("Expected free energy:", exp_free_energy)
-    #             print("Expected states after action", exp_state_after_action,'\n\n')
-    #
-    #     self.reset(self.A)
-    #     #q_states_policy = np.array(q_states_policy)
-    #
-    #     return fe_policy, q_states_policy
+        return np.array(q_state)
 
 
+    def sample_states_per_policy(self, policy, info=False):
 
-    # def exp_free_energy_all_policies(self, info=False):
-    #
-    #     """
-    #     Computes the free energy of different policies. The free energy of each
-    #     action is predicted and then summed up to obtain the policy's free energy.
-    #
-    #     """
-    #
-    #     q_state = list()
-    #     exp_free_energies = list()
-    #
-    #     #policies = np.unique(self.policies[:, self.agent.time_step:], axis=0)
-    #     policies = self.policies[:, self.agent.time_step:]
-    #     #policies = self.policies
-    #
-    #     for policy in policies:
-    #
-    #         fe_policy, q_states_policy = self.exp_free_energy_per_policy(policy)
-    #
-    #
-    #         q_state.append(q_states_policy)
-    #         exp_free_energies.append(fe_policy)
-    #
-    #
-    #     q_state = np.array(q_state).squeeze()
-    #     exp_free_energies = np.array(exp_free_energies)
-    #
-    #     if info:
-    #         print("\n\nPolicy:\n", policies)
-    #         #print("Q-states\n", np.array(q_state))
-    #         print("\nFree energy:", exp_free_energies)
-    #         print("A", self.A)
-    #         pass
-    #
-    #     return exp_free_energies, q_state
+        """ Compute free energy of each policy.
+
+        Returns: q_states_policy  (2d-array)    The expected future states if
+                                                policy is followed
+        """
+
+        current_state = np.average(self.agent.start_state, axis=0)
+        q_states_policy = [current_state]
+
+        for time_step, action in enumerate(policy):
+
+            exp_state_after_action = current_state @ self.B[action]
+            current_state = exp_state_after_action
+
+            q_states_policy.append(exp_state_after_action)
+
+            if info:
+                print("Action:", action)
+                print("Expected state after action", exp_state_after_action,'\n\n')
+
+        return np.array(q_states_policy)
 
 
-    # def bayesian_averaging(self, free_energies, q_s, info=True):
-    #
-    #     action_prob = np.zeros(self.actions.shape)
-    #     q_pi = softmax(-free_energies, self.agent.temperature)
-    #     self.q_pi = q_pi
-    #
-    #     q_s = np.average(q_s, weights=q_pi, axis=0)
-    #
-    #
-    #     #policies = np.unique(self.policies[:, self.agent.time_step:], axis=0)[:, 0]
-    #     policies = self.policies[:, self.agent.time_step].flatten()
-    #     # for action in range(4):
-    #     #     action_prob[action] = np.sum(q_pi[policies == action])
-    #     for i, action in enumerate(policies):
-    #         action_prob[action] += q_pi[i]
-    #
-    #     action_prob /= np.sum(action_prob)
-    #
-    #     if info:
-    #         print("Policy probability q(pi):\n", q_pi, '\n')
-    #         print("State probability q(s):\n", q_s, '\n')
-    #         print("Action probability q(u):\n", action_prob, '\n')
-    #
-    #     return action_prob, q_s
+    def sample_outcomes(self, q_states):
+
+        A = self.A
+        outcomes = list()
+
+        for q_state in q_states:
+
+            outcome = list()
+
+            for q_s in q_state:
+
+                o = q_s @ A
+                outcome.append(o)
+
+                # Location 1 and 2 are absorbing states:
+                # the agent does not continue to move or to receive feedback
+                # after getting (only works here because state is perfectly known)
+                action = np.argmax(q_s)
+
+                if action == 1 or action == 2:
+                    A = np.zeros(4)
+
+            outcomes.append(outcome)
+            A = self.A
+
+        return np.array(outcomes)
 
 
-    def bayesian_averaging(self, free_energies, info=True):
+###### Update belief when cue is seen ###
 
-        q_pi = softmax(-free_energies, self.agent.temperature)
+    def update_A(self):
+
+        A = self.agent.belief_updating(1)
+        #self.A = np.array([0, p, (1-p), 0])
+        self.A = A
+
+
+##### Computing the probability of action through bayesian model averaging ###
+
+    def bayesian_averaging(self, free_energies, info=False):
+
+
+        q_pi = softmax(-free_energies-np.amax(-free_energies), self.agent.temperature)
         self.q_pi = q_pi
 
         policies = self.policies[:, self.agent.time_step].flatten()
@@ -480,24 +362,7 @@ class LongTerm:
         return action_prob
 
 
-
-    # def expected_reward(self, q_state, action):
-    #
-    #     current_reward = 0
-    #     discount = 1
-    #     #
-    #     # if q_state.ndim == 1:
-    #     #
-    #     #     current_reward = q_state @ self.A
-    #     #
-    #     # else:
-    #     for q in q_state[self.agent.time_step:]:
-    #
-    #         current_reward += q @ self.A * discount
-    #         discount /= 2
-    #
-    #     return current_reward
-
+### Expected reward (for rendering) #########
     def expected_reward(self, q_states, action):
 
         current_reward = 0
@@ -507,13 +372,13 @@ class LongTerm:
 
         for q in q_state_average[self.agent.time_step+1:]:
 
-            current_reward += q @ self.A * discount
+            current_reward += (q @ self.A) * discount
             discount /= 2
 
         return current_reward
 
 
-
+######################## Learning ##########################
 
     def variational_free_energy(self, policy, q_state, true_reward):
 
@@ -543,27 +408,8 @@ class LongTerm:
 
         return gradient_F
 
-    def vfe_states(self, policy, q_state, true_reward):
 
-        policies = self.policies
-        vfe_all_policies = list()
 
-        for i, policy in enumerate(policies):
-
-            vfe = self.variational_free_energy(policy, q_state[i], true_reward)
-            vfe_all_policies.append(vfe)
-
-        return np.array(vfe_all_policies)
-
-    def gradient_precision(self, G):
-        """
-        G: free energies of all policies
-        """
-
-        T = self.agent.temperature
-        T_t = T + ()
-
-        pi_0 = softmax(-(1/T) * G)
 
     def compute_new_A(self, F, policy, q_state, true_reward):
 
@@ -571,15 +417,15 @@ class LongTerm:
         t = 1
 
         a = np.log( remove_zeros(true_reward ))
-
-
         b = np.log( remove_zeros( self.B[policy[t-1]])) @ q_state[t-1]
-
         c = q_state[t] * (np.log(remove_zeros(q_state[t])) - b - a)
 
         A = q_state[t] * (np.log(remove_zeros(q_state[t])) - b - a) - F
         #print(A, softmax(-A, T=10))
-        A = softmax(-A, T=10)
+
+        # Should be an exponential, insteadof softmax function:
+        # see Sajid, 2019, page 14
+        A = softmax(-A, T=self.agent.temperature)
 
         return A
 
@@ -600,6 +446,9 @@ class LongTerm:
         # A[1:3] = a
 
         return A
+
+
+
 
 
 

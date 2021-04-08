@@ -5,48 +5,44 @@ import pandas as pd
 
 class Environment:
 
-    def __init__(self, hint_shows_left=.75, hint_reliability=.98, hint=-1):
+    def __init__(self, food_is_right=.75, hint_reliability=.98):
 
-        if hint < 0:
-            self.hint = np.random.choice([1, 2], p=[hint_shows_left, 1-hint_shows_left])
-        else:
-            self.hint = hint
-
-        self.hint_shows_left = hint_shows_left
+        self.fil = 1 - food_is_right
+        self.food_location = np.random.choice([1, 2], p=[self.fil, 1-self.fil])
 
         # Probability of getting a reward at the cued location.
         # Cue is in location 3.
         r = hint_reliability
-        self.reliability = np.array([r, 1-r])
+
+        # When reliability is 0, cue is fiable 50% of the time
         self.reliability = np.array([(1+r)*.5, (1-r)*.5])
 
-        self.food_location = np.random.choice([self.hint, 3-self.hint], p=self.reliability)
+        # When reliability is 0, cue is fiable 0% of the time
+        # (change ShortTerm if uncommented)
+        # self.reliability = np.array([r, (1-r)])
 
-        self.hint_visited = False
+        # Define which way the hint is pointing at depending on cheese Location
+        # and the cue reliability
+        self.hint = np.random.choice([self.food_location, 3-self.food_location],
+                                        p=self.reliability)
 
+
+        # Agent always starts at position 0
         self.true_agent_state = np.zeros(4)
         self.true_agent_state[0] = 1
 
+        #### Causal structure of Environment ###
 
-
-        # p = 1 if self.food_location == 1 else -1
-        # q = -1 if p == 1 else 1
-
-        # p = 1 if self.food_location == 1 else 0
-        # q = 0 if p == 1 else 1
-
-
-        #self.true_A = np.array([0,p,q,0])
+        # The positive reward is at the cheese location
         self.true_A = np.zeros(4)
         self.true_A[self.food_location] = 1
-
-        self.A_pos = np.identity(4)
 
         # Transition p(state at time t | state at t-1, action)
 
         # Probability of going from state at time t to state at time t+1
         # when performing action a.
-        # shape: (4, 4, 4) = 4 actions, 4 possible states at time t,
+        # shape: (4, 4, 4) = 4 actions,
+        #                   4 possible states at time t,
         #                   4 possible states at time t+1
 
         ## x: Current action
@@ -55,24 +51,27 @@ class Environment:
         ## B[x, y, z]
 
         self.true_B = np.array([[[1, 0, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 0, 1, 0],
-                            [1, 0, 0, 0]],
+                                [0, 1, 0, 0],
+                                [0, 0, 1, 0],
+                                [1, 0, 0, 0]],
 
-                            [[0,1, 0, 0],
-                            [0, 1, 0, 0],
-                            [0, 0, 1, 0],
-                            [0, 1, 0, 0]],
+                                [[0,1, 0, 0],
+                                [0, 1, 0, 0],
+                                [0, 0, 1, 0],
+                                [0, 1, 0, 0]],
 
-                            [[0, 0, 1, 0],
-                            [0, 1, 0, 0],
-                            [0, 0, 1, 0],
-                            [0, 0, 1, 0]],
+                                [[0, 0, 1, 0],
+                                [0, 1, 0, 0],
+                                [0, 0, 1, 0],
+                                [0, 0, 1, 0]],
 
-                            [[0, 0, 0, 1],
-                            [0, 1, 0, 0],
-                            [0, 0, 1, 0],
-                            [0, 0, 0, 1]]])
+                                [[0, 0, 0, 1],
+                                [0, 1, 0, 0],
+                                [0, 0, 1, 0],
+                                [0, 0, 0, 1]]])
+
+        # Used for rendering
+        self.hint_visited = False
 
 
     def __str__(self):
@@ -81,17 +80,20 @@ class Environment:
         s = "Food is at:" + str(self.food_location)
         h =  "    Hint shows:" + str(self.hint)
         r = "\nTrue reliability:" + str(self.reliability)
-        fl = "\Hint shows left probability:" + str(self.hint_shows_left)
+        fl = "\nHint shows left probability:" + str(self.hint_shows_left)
 
 
         return pres + s + h+ r + fl
 
     def reset(self):
 
-        self.hint = np.random.choice([1, 2], p=[self.hint_shows_left, 1-self.hint_shows_left])
-        self.food_location = np.random.choice([self.hint, 3-self.hint], p=self.reliability)
+        self.food_location = np.random.choice([1, 2], p=[self.fil, 1-self.fil])
+        self.hint = np.random.choice([self.food_location, 3-self.food_location],
+                                        p=self.reliability)
+
         self.true_A = np.zeros(4)
         self.true_A[self.food_location] = 1
+
         self.true_agent_state = np.array([1,0,0,0])
         self.hint_visited = False
 
@@ -108,6 +110,11 @@ class Environment:
         if (state == 3):
             hint = self.hint
             self.hint_visited = True
+
+        # There is only one cheese - if cheese location is reached,
+        # the reward is gained only once
+        if (state == 1) or (state == 2):
+            self.true_A = np.zeros(4)
 
         current_state = self.true_agent_state
 
@@ -133,7 +140,7 @@ class Environment:
 
         np.set_printoptions(formatter={'float': lambda x: "{:.2f}".format(x)})
 
-        print('\n▛', end='')
+        print('\n\t▛', end='')
         for _ in range(22):
             print('▔', end='')
         print('▜')
@@ -164,46 +171,57 @@ class Environment:
                 left = " "
                 right = "  🐁 🧀"
 
-        print('▒ ' + left +'            ' + right+' ▒')
+        # left = ' 1  '
+        # right = '  2 '
+        print('\t▒ ' + left +'            ' + right+' ▒')
 
         left = f"{p:.2f}"
         right = f"{q:.2f}"
         r = f"{reliability:.2f}"
 
-        print('▒▒▒▒▒▒▒▒▒▒    ▒▒▒▒▒▒▒▒▒▒')
-        print('▒▒▒▒▒▒▒▒▒▒    ▒▒▒▒▒▒▒▒▒▒')
+        print('\t▒▒▒▒▒▒▒▒▒▒    ▒▒▒▒▒▒▒▒▒▒')
+        print('\t▒▒▒▒▒▒▒▒▒▒    ▒▒▒▒▒▒▒▒▒▒')
+        print('\t▒▒▒▒▒▒▒▒▒▒    ▒▒▒▒▒▒▒▒▒▒')
 
-        print('▒▒'+left+'▒▒▒▒    ▒▒▒▒'+right+'▒▒')
+        print('\t▒▒'+left+'▒▒▒▒    ▒▒▒▒'+right+'▒▒')
 
         if (state == 0):
-            print('▒▒▒▒▒▒▒▒▒▒ 🐁 ▒▒▒▒▒▒▒▒▒▒')
+            print('\t▒▒▒▒▒▒▒▒▒▒ 🐁 ▒▒▒▒▒▒▒▒▒▒')
+            #print('\t▒▒▒▒▒▒▒▒▒▒  0 ▒▒▒▒▒▒▒▒▒▒')
+
         else:
-            print('▒▒▒▒▒▒▒▒▒▒    ▒▒▒▒▒▒▒▒▒▒')
-        print('▒▒▒▒▒▒▒▒▒▒    ▒▒▒▒▒▒▒▒▒▒')
-        print('▒▒▒▒▒▒▒▒▒▒    ▒▒▒▒▒▒▒▒▒▒')
+            print('\t▒▒▒▒▒▒▒▒▒▒    ▒▒▒▒▒▒▒▒▒▒')
+        print('\t▒▒▒▒▒▒▒▒▒▒    ▒▒▒▒▒▒▒▒▒▒')
+        print('\t▒▒▒▒▒▒▒▒▒▒    ▒▒▒▒▒▒▒▒▒▒')
 
         if (state == 3):
-            print('▒▒▒▒▒▒▒▒▒▒🐁  ▒▒▒▒▒▒▒▒▒▒')
+            print('\t▒▒▒▒▒▒▒▒▒▒ 🐁 ▒▒▒▒▒▒▒▒▒▒')
         else:
-            print('▒▒▒▒▒▒▒▒▒▒    ▒▒▒▒▒▒▒▒▒▒')
+            print('\t▒▒▒▒▒▒▒▒▒▒    ▒▒▒▒▒▒▒▒▒▒')
 
 
         if self.hint == 1 and self.hint_visited:
             #print('▙▁▁▁▁▁▁▁▁▁  L ▁▁▁▁▁▁▁▁▁▟')
-            print('▒▒▒▒▒▒▒▒▒▒  L ▒▒▒▒▒▒▒▒▒▒')
+            print('\t▒▒▒▒▒▒▒▒▒▒  L ▒▒▒▒▒▒▒▒▒▒')
 
         elif self.hint == 2 and self.hint_visited:
             #print('▙▁▁▁▁▁▁▁▁▁  R ▁▁▁▁▁▁▁▁▁▟')
-            print('▒▒▒▒▒▒▒▒▒▒  R ▒▒▒▒▒▒▒▒▒▒')
+            print('\t▒▒▒▒▒▒▒▒▒▒  R ▒▒▒▒▒▒▒▒▒▒')
 
         else:
-            print('▒▒▒▒▒▒▒▒▒▒    ▒▒▒▒▒▒▒▒▒▒')
+            print('\t▒▒▒▒▒▒▒▒▒▒    ▒▒▒▒▒▒▒▒▒▒')
 
-        print('▙▁▁▁▁▁▁▁▁▁'+r+'▁▁▁▁▁▁▁▁▁▟')
-        #print('▙▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▟')
+        #print('\t▙▁▁▁▁▁▁▁▁▁'+r+'▁▁▁▁▁▁▁▁▁▟')
+        print('\t▒▒▒▒▒▒▒▒▒▒'+r+'▒▒▒▒▒▒▒▒▒▒')
+        #print('\t▒▒▒▒▒▒▒▒▒▒  3 ▒▒▒▒▒▒▒▒▒▒')
+        #print('\t▙▁▁▁▁▁▁▁▁▁  3 ▁▁▁▁▁▁▁▁▁▟')
+        print('\t▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔')
         print()
 
 
 if __name__ == "__main__":
 
     np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
+
+    env = Environment()
+    env.render([0, 0.5, 0.5, 0], .98)
