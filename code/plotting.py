@@ -1,8 +1,5 @@
 import numpy as np
 
-
-import pandas as pd
-
 from Environment import Environment
 from LongTerm import LongTerm
 from ShortTerm import ShortTerm
@@ -11,7 +8,6 @@ from Agent import Agent
 import matplotlib.pyplot as plt
 import matplotlib.colors as mco
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-import seaborn as sns
 
 
 from itertools import product, cycle
@@ -138,36 +134,50 @@ def expected_reward(step=80, loops=1, t=0.1):
 
 
 
-def plot_accuracy(acc_inf, acc_learn, ps, EPOCHS, EPISODES):
+def plot_accuracy(acc_inf1, acc_inf2, acc_learn, ps, EPOCHS, EPISODES):
 
     # https://stackoverflow.com/questions/925024/how-can-i-remove-the-top-and-right-axis-in-matplotlib
 
-    fig, ax = plt.subplots(1)
-    ax.plot(acc_inf, label="Active inference")
-    ax.plot(acc_learn, label="Learning")
-    ax.plot(np.arange(EPOCHS), ps[:EPOCHS], 'r--', label="Expected accuracy \n(optimal policy)")
+    fig, ax = plt.subplots(1, figsize=(8, 5), dpi=180)
+    ax2 = ax.twinx()
+
+    ax.plot(acc_inf1, label="Active inference", linewidth=.8)
+    ax.plot(acc_learn, label="Active \ninference +\nLearning \nprior beliefs")
+    ax.plot(acc_inf2, label="Active inference", linewidth=.8)
+    #ax2.plot(np.arange(EPOCHS), ps[:EPOCHS], 'r--', label="Expected accuracy \n(optimal policy)")
     #ax.plot(np.arange(EPOCHS, (2*EPOCHS)), ps[EPOCHS:], 'r--')
-    ax.plot(np.arange(EPOCHS, (2*EPOCHS)), [1] * EPOCHS, 'r--')
+    #ax2.plot(np.arange(EPOCHS, EPOCHS*3), [1] * (EPOCHS*2), 'r--')
     #plt.axhline(y=, color='r', linestyle='--', label="Expected reward optimal policy")
 
+    ax.set_ylim([0,1])
+    #ax2.set_ylim([0,1]);
+    ax.set_yticks(np.linspace(0, 1, 5))
+    #ax2.set_yticks(np.linspace(0, 1, 5))
+    #plt.xticks(np.arange(0, len(acc_inf) + EPOCHS, 10), np.arange(0, len(acc_inf)+ EPOCHS, 10))
+    #ax.set_yticks(np.arange(0, 1.2, .2))
 
-    plt.ylim([0, 1.1])
-    plt.xticks(np.arange(0, len(acc_inf), 1), np.arange(0, len(acc_inf), 1))
-    plt.yticks(np.arange(0, 1.2, .2))
+    ax2.axvline(x=EPOCHS, c='r', ls='--')
+
+    ax.set_xlabel("Epochs")
+    ax.set_ylabel("Accuracy")
+    #ax2.set_ylabel("Expected reward (optimal policy)", fontsize=8.5)
 
     plt.grid(axis='y')
 
-    ax.annotate("Test", xy=(EPOCHS / 4, -1))
+    #ax.annotate("Test", xy=(EPOCHS / 4, -1))
     #r"$p_{True} = 0.9$\n$r_{True} = 0.9$"
 #    , xytext=(0, 5),xycoords='axes fraction', textcoords='offset points',
     #        size='large', ha='center', va='baseline', fontsize=12)
 
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    #ax.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
 
 # Put a legend to the right of the current axis
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    ax.legend(loc='center left', bbox_to_anchor=(1.15, 0.5), fontsize=7)
+    #ax.legend('upper center', bbox_to_anchor=(0.5, -0.05), ncol=5)
     ax.set_title("Accuracy over epochs ("+str(EPISODES)+" runs per epoch)")
+    fig.savefig(path + "/learning.pdf", format="pdf")
     plt.show()
 
 def plot_As(As):
@@ -271,7 +281,7 @@ def true_best_policy(step=5, loops=3):
 
 def compare_optimal_and_real_reward(step, loops, T):
 
-    opt_reward = np.fromfile('reward_optimal_policy_'+str(loops)+'x'+str(step),  sep=',')
+    opt_reward = np.fromfile('reward_optimal_policy_'+str(step),  sep=',')
 
     y = np.zeros((step+1, step+1))
     step = (1 / step)
@@ -486,42 +496,49 @@ def subplot_opt_true(step, loops):
     fig2.savefig(path + '/diff_opt_reward_true_reward_'+ str(step)+"x"+str(loops)+".pdf", format="pdf")
     #plt.show()
 
-EPISODES = 20
-EPOCHS = 30
-TEMP = 3
-RUNS = 1
+
 
 def plot_learning():
 
+    EPISODES = 30
+    EPOCHS = 30
+    TEMP = 3
+    RUNS = 1
+
+
 
     true_ps = [.9, 0.1]
-    true_rs = [.3, 1]
-    prior_p = .5
-    prior_r = 0
+    true_rs = [.1, 1]
+    prior_p = .9
+    prior_r = .3
 
     env = Environment(food_is_right=true_ps[0], hint_reliability=true_rs[0])
 
-    act_inf = Agent(env, T=TEMP, food_is_right_prior=prior_p, reliability_prior=prior_r, mode="inference")
-    learn = Agent(env, T=TEMP, food_is_right_prior=prior_p, reliability_prior=prior_r, mode="learning")
+    act_inf1 = Agent(env, T=TEMP, food_is_right_prior=prior_p, reliability_prior=prior_r, mode="inference")
+    act_inf2 = Agent(env, T=TEMP, food_is_right_prior=0.2, reliability_prior=0.9, mode="inference")
+    learn = Agent(env, T=TEMP, food_is_right_prior=0.2, reliability_prior=0.9, mode="learning")
 
     #params = (true_p, true_r, prior_p, prior_r)
 
 
-    accuracies_inf = np.zeros(EPOCHS * len(true_ps))
-    accuracies_learn = np.zeros(EPOCHS * len(true_ps))
+    accuracies_inf1 = np.zeros(EPOCHS * 3)
+    accuracies_inf2 = np.zeros(EPOCHS * 3)
+    accuracies_learn = np.zeros(EPOCHS * 3)
     ps = list()
     #As = [a.A]
 
     for _ in range(RUNS):
 
-        accuracy_inf = list()
+        accuracy_inf1 = list()
+        accuracy_inf2 = list()
         accuracy_learn = list()
 
         for true_r, true_p in zip(true_rs, true_ps):
 
             env = Environment(food_is_right=true_p, hint_reliability=true_r)
 
-            act_inf.env = env
+            act_inf1.env = env
+            act_inf2.env = env
             learn.env = env
 
             for i in range(EPOCHS):
@@ -529,25 +546,32 @@ def plot_learning():
                 if i % 20 == 0:
                     print("######  Epoch " + str(i+1) + "  ####")
 
-                acc_inf, A = act_inf.epoch(EPISODES)
+                acc_inf1, A = act_inf1.epoch(EPISODES)
+                acc_inf2, A = act_inf2.epoch(EPISODES)
+
                 acc_learn, A = learn.epoch(EPISODES)
                 #print("Accuracy", acc, "A", A)
-                accuracy_inf.append(acc_inf)
+                accuracy_inf1.append(acc_inf1)
+                accuracy_inf2.append(acc_inf2)
                 accuracy_learn.append(acc_learn)
                 ps.append(true_p if true_p > .5 else 1- true_p)
 
+            EPOCHS = int(EPOCHS * 2)
 
-        accuracies_inf += np.array(accuracy_inf)
+
+        accuracies_inf1 += np.array(accuracy_inf1)
+        accuracies_inf2 += np.array(accuracy_inf2)
         accuracies_learn += np.array(accuracy_learn)
 
-    accuracies_inf /= RUNS
+    EPOCHS = int(EPOCHS / 4)
+    accuracies_inf1 /= RUNS
+    accuracies_inf2 /= RUNS
     accuracies_learn /= RUNS
 
         #As.append(A)
 
-
     #print("Accuracies", accuracies)
-    plot_accuracy(accuracies_inf, accuracies_learn, ps, EPOCHS, EPISODES)
+    plot_accuracy(accuracies_inf1, accuracies_inf2, accuracies_learn, ps, EPOCHS, EPISODES)
 
 
 
@@ -555,8 +579,8 @@ if __name__ == "__main__":
 
     np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 
-    S = 10
-    L = 15
+    S = 100
+    L = 30
 
     plot_learning()
 

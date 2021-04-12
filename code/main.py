@@ -10,21 +10,30 @@ np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 
 EPISODES = 20
 EPOCHS = 30
-MODE = "inference" #
+TEMP = 3 # temperature
+#MODE = "inference" #
 MODE = "learning"
 
+def simple():
+
+    env = Environment(food_is_right=1)
+    a = Agent(env, T=1, food_is_right_prior=1, policy=[[2,2]], mode=MODE)
+
+    for _ in range(EPISODES):
+        a.episode(info=True)
 
 def main():
 
-    true_ps = [1, 0]
-    true_rs = [0, 1]
-    prior_p = .5
-    prior_r = .5
+
+    true_ps = [.9, .1]
+    true_rs = [.3, 1]
+    prior_p = .9
+    prior_r = .3
 
     env = Environment(food_is_right=true_ps[0], hint_reliability=true_rs[0])
 
-    act_inf = Agent(env, T=3, food_is_right_prior=prior_p, reliability_prior=prior_r, mode="inference")
-    learn = Agent(env, T=3, food_is_right_prior=prior_p, reliability_prior=prior_r, mode="learning")
+    act_inf = Agent(env, T=TEMP, food_is_right_prior=prior_p, reliability_prior=prior_r, mode="inference")
+    learn = Agent(env, T=TEMP, food_is_right_prior=prior_p, reliability_prior=prior_r, mode="learning")
 
     #params = (true_p, true_r, prior_p, prior_r)
 
@@ -34,7 +43,7 @@ def main():
     ps = list()
     #As = [a.A]
 
-    for true_r, true_p in zip(true_rs[:1], true_ps[:1]):
+    for true_r, true_p in zip(true_rs, true_ps):
 
         env = Environment(food_is_right=true_p, hint_reliability=true_r)
 
@@ -57,8 +66,8 @@ def main():
 
 
     #print("Accuracies", accuracies)
-    plot_accuracy(accuracies_inf, accuracies_learn, ps)
+    plot_accuracy(accuracies_inf, accuracies_learn, ps, EPOCHS, EPISODES)
     #plot_As(As)
 
-
-main()
+simple()
+#main()

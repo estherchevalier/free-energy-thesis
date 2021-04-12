@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import numpy as np
-import pandas as pd
 
 from Environment import Environment
 from LongTerm import LongTerm
@@ -124,6 +123,9 @@ class Agent:
             action  = self.action_selection(q_pi)
 
             true_reward = self.execute_action(action)
+
+
+            ### For logging purposes
             exp_reward = self.long_term.expected_reward(q_s, action)
 
             reward += true_reward
@@ -147,9 +149,9 @@ class Agent:
             #q_s = self.long_term.sample_states()
             #o = self.long_term.sample_outcomes(q_s)
 
-            rewards = np.tile(rewards, self.long_term.policies.shape[0]).reshape(-1, 3)
-
-            A = self.learn(q_s, rewards[:, 1])
+            #rewards = np.tile(rewards, self.long_term.policies.shape[0]).reshape(-1, 3)
+            rewards = np.repeat(reward, self.long_term.policies.shape[0])
+            A = self.learn(q_s, rewards)
 
             # numbers_pol = self.long_term.policies.shape[0]
             # rewards = np.tile(reward, numbers_pol)
