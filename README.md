@@ -1,8 +1,3 @@
-Read Me
+This github repository contains the final version and the program files attached to the bachelor thesis of Esther Chevalier, student at the University of Osnabrück.
 
-Program files
-
-How to use it
-
-requirements.txt
-
+The attached code's requirements are to be found in the ```code``` folder.
