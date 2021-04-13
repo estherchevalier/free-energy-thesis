@@ -277,5 +277,4 @@ TSWLatexianTemp*
 
 # Custom
 *.ist
-# The thesis itself. Can be added back in the last commit.
-thesis.pdf
+*.bib
